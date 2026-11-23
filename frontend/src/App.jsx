@@ -1,122 +1,87 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useCallback, useEffect, useRef, useState } from 'react';
+import Header from './components/Header';
+import Footer from './components/Footer';
+import BookingDialog from './components/BookingDialog';
+import HomePage from './pages/HomePage';
+import FindBookingPage from './pages/FindBookingPage';
+import { listCars } from './api';
+import { addDays, daysBetween, todayISO } from './lib/dates';
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [today] = useState(todayISO);
+  const [view, setView] = useState('home');
+  const [dates, setDates] = useState(() => ({ start: addDays(todayISO(), 1), end: addDays(todayISO(), 4) }));
+  const [fleet, setFleet] = useState({ status: 'loading', cars: [], sample: false });
+  const [category, setCategory] = useState('All cars');
+  const [reserving, setReserving] = useState(null);
+
+  const days = daysBetween(dates.start, dates.end);
+
+  // Only the newest request may update the screen, so a slow answer for old dates
+  // can never overwrite the cars for the dates the visitor picked afterwards.
+  const latestRequest = useRef(0);
+
+  const loadCars = useCallback(
+    async ({ quiet = false } = {}) => {
+      const requestId = ++latestRequest.current;
+      if (!quiet) setFleet((current) => ({ ...current, status: 'loading' }));
+      try {
+        const { data, sample } = await listCars(dates.start, dates.end);
+        if (requestId === latestRequest.current) setFleet({ status: 'ready', cars: data, sample });
+      } catch {
+        if (requestId === latestRequest.current) setFleet({ status: 'error', cars: [], sample: false });
+      }
+    },
+    [dates.start, dates.end],
+  );
+
+  useEffect(() => {
+    loadCars();
+  }, [loadCars]);
+
+  // Keep the dates sensible: not in the past, and the return at least a day after pick-up.
+  function changeDates(change) {
+    const next = { ...dates, ...change };
+    if (next.start < today) next.start = today;
+    if (daysBetween(next.start, next.end) < 1) next.end = addDays(next.start, 1);
+    setDates(next);
+  }
 
   return (
     <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+      <Header view={view} onNavigate={setView} />
 
-      <div className="ticks"></div>
+      <main>
+        {view === 'home' ? (
+          <HomePage
+            today={today}
+            dates={dates}
+            days={days}
+            fleet={fleet}
+            category={category}
+            onCategory={setCategory}
+            onDatesChange={changeDates}
+            onReserve={setReserving}
+            onRetry={() => loadCars()}
+          />
+        ) : (
+          <FindBookingPage />
+        )}
+      </main>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      <Footer />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
+      {reserving && (
+        <BookingDialog
+          key={reserving.id}
+          car={reserving}
+          start={dates.start}
+          end={dates.end}
+          days={days}
+          onClose={() => setReserving(null)}
+          onBooked={() => loadCars({ quiet: true })}
+        />
+      )}
     </>
-  )
+  );
 }
-
-export default App
