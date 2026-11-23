@@ -3,6 +3,7 @@ import { dayWord, formatDay } from '../lib/dates';
 import { formatKES } from '../lib/money';
 
 // Shared by the reserve dialog (before sending), the confirmation, and the find-booking page.
+
 export default function BookingSummary({ details }) {
   return (
     <dl className="summary">

@@ -6,7 +6,7 @@ import { createBooking } from '../api';
 import { rentalTotal } from '../lib/money';
 import { normalizePhone, validateBooking } from '../lib/validate';
 
-export default function BookingDialog({ car, start, end, days, onClose, onBooked }) {
+export default function BookingDialog({ car, start, end,  days, onClose, onBooked }) {
   const dialogRef = useRef(null);
   const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' });
   const [errors, setErrors] = useState({});
