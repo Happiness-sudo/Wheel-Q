@@ -1,7 +1,5 @@
-
-import { API_URL, ALLOW_SAMPLE_FALLBACK } from './config';
+﻿import { API_URL } from './config';
 import { ApiError } from './apiError';
-import * as sample from './sampleApi';
 
 async function request(path, options = {}) {
   let response;
@@ -35,47 +33,27 @@ async function request(path, options = {}) {
   return body;
 }
 
-// Public booking functions retain their existing sample fallback.
-async function withSampleFallback(callServer, callSample) {
-  try {
-    return { data: await callServer(), sample: false };
-  } catch (error) {
-    const serverIsDown = error instanceof ApiError && error.status === 0;
-
-    if (ALLOW_SAMPLE_FALLBACK && serverIsDown) {
-      return { data: await callSample(), sample: true };
-    }
-
-    throw error;
-  }
-}
-
+// Public booking functions use the real Flask backend.
 export function listCars() {
-  return request("/api/cars");
+  return request('/api/cars');
 }
 
 export function createBooking(payload) {
-  return withSampleFallback(
-    () => request('/api/bookings', {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    }),
-    () => sample.createBooking(payload),
-  );
+  return request('/api/bookings', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
 export function findBooking(reference, phone) {
   const query = `phone=${encodeURIComponent(phone)}`;
 
-  return withSampleFallback(
-    () => request(
-      `/api/bookings/${encodeURIComponent(reference)}?${query}`
-    ),
-    () => sample.findBooking(reference, phone),
+  return request(
+    `/api/bookings/${encodeURIComponent(reference)}?${query}`
   );
 }
 
-// Admin fleet management: these always use the real backend.
+// Admin fleet management functions.
 export function adminListCars() {
   return request('/api/cars');
 }
@@ -88,9 +66,9 @@ function vehiclePayload(payload) {
   const formData = new FormData();
 
   Object.entries(payload).forEach(([key, value]) => {
-    if (key === "image") {
+    if (key === 'image') {
       if (value instanceof File) {
-        formData.append("image", value);
+        formData.append('image', value);
       }
       return;
     }

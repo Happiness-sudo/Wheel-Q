@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from 'react';
 import { CalendarDays, CarFront, MapPin, ShieldCheck, Headset, Car, Menu, X, ArrowRight, Search, Fuel, Users } from 'lucide-react';
 import './styles.css';
-import { listCars } from './api';
+import { listCars, createBooking, findBooking } from './api';
 import { API_URL } from './config';
 
 const categories = [ ['Economy','Affordable & fuel efficient'],['SUV','Power & space'],['Van','Ideal for groups'],['Luxury','Travel in style'] ];
@@ -119,7 +119,146 @@ function Fleet({ vehicles, onBook }) {
 
 function Experience(){return <section className="experience-section"><div className="experience-content"><span className="section-label">THE WHEEL-Q EXPERIENCE</span><h2>More Than Just a Car Hire</h2><p>We are committed to providing you with a seamless car hire experience in Ruiru and beyond. Travel with confidence, comfort and class.</p><a className="gold-button" href="#contact">Learn More <ArrowRight size={16}/></a></div></section>}
 function Footer(){return <footer className="footer" id="contact"><div className="footer-content"><div><a href="#home" className="logo footer-logo"><span className="logo-car">Wheel<span>Q</span></span><span className="logo-tagline">Tours and Car Hire</span></a><p>Where Every Ride is Unique</p></div><div><h3>Quick Links</h3><a href="#home">Home</a><a href="#fleet">Our Fleet</a><a href="#contact">Contact</a></div><div><h3>Location</h3><p>Lake Oil Petrol Station, Matangi Road, Kimbo, Ruiru</p><p>0726 913 395</p><p>0704 576 605</p></div></div><div className="footer-bottom">Â© {new Date().getFullYear()} WHEEL-Q. All rights reserved.</div></footer>}
-function Modal({vehicle,onClose,dates}){if(!vehicle)return null;return <div className="modal-overlay" onClick={onClose}><div className="booking-modal" onClick={e=>e.stopPropagation()}><button className="modal-close" onClick={onClose}><X/></button><h2>Reserve Your Vehicle</h2><p>{vehicle.name}</p><div className="modal-summary"><img src={vehicle.image} alt={vehicle.name}/><div><strong>{vehicle.name}</strong><p>KES {vehicle.price.toLocaleString()} per day</p></div></div><p>Pick-up: {dates.pickup||'Not selected'}</p><p>Return: {dates.return||'Not selected'}</p><a className="gold-button modal-whatsapp" href={`https://wa.me/254726913395?text=${encodeURIComponent(`Hello WHEEL-Q, I'd like to reserve ${vehicle.name}. Pick-up: ${dates.pickup||'Not selected'}. Return: ${dates.return||'Not selected'}.`)}`} target="_blank" rel="noreferrer">Continue on WhatsApp</a></div></div>}
+function Modal({
+  vehicle,
+  onClose,
+  dates,
+  onSubmit,
+  saving,
+  bookingResult,
+  bookingError
+}) {
+  const [customerName, setCustomerName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    setCustomerName("");
+    setPhone("");
+    setEmail("");
+  }, [vehicle?.id]);
+
+  if (!vehicle) return null;
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    if (!dates.pickup || !dates.return) {
+      alert("Please select your pick-up and return dates.");
+      return;
+    }
+
+    if (dates.return <= dates.pickup) {
+      alert("Return date must be after pick-up date.");
+      return;
+    }
+
+    await onSubmit({
+      car_id: vehicle.id,
+      customer_name: customerName.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      pickup_date: dates.pickup,
+      return_date: dates.return
+    });
+  }
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div
+        className="booking-modal"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button className="modal-close" onClick={onClose}>
+          <X />
+        </button>
+
+        <h2>Reserve Your Vehicle</h2>
+
+        <div className="modal-summary">
+          {vehicle.image && (
+            <img src={vehicle.image} alt={vehicle.name} />
+          )}
+
+          <div>
+            <strong>{vehicle.name}</strong>
+            <p>
+              KES {Number(vehicle.price).toLocaleString()} per day
+            </p>
+          </div>
+        </div>
+
+        <p>Pick-up: {dates.pickup || "Not selected"}</p>
+        <p>Return: {dates.return || "Not selected"}</p>
+
+        {bookingResult ? (
+          <div className="booking-success">
+            <h3>Booking received!</h3>
+            <p>Your reservation has been saved.</p>
+            <p>
+              Reference: <strong>{bookingResult.reference}</strong>
+            </p>
+            <p>
+              Total: KES {Number(bookingResult.total_amount).toLocaleString()}
+            </p>
+            <p>Status: {bookingResult.status}</p>
+
+            <button className="gold-button" onClick={onClose}>
+              Done
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <label>
+              Full name
+              <input
+                required
+                maxLength={120}
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                placeholder="Your full name"
+              />
+            </label>
+
+            <label>
+              Phone number
+              <input
+                required
+                maxLength={30}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="07XXXXXXXX"
+              />
+            </label>
+
+            <label>
+              Email address (optional)
+              <input
+                type="email"
+                maxLength={120}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+              />
+            </label>
+
+            {bookingError && (
+              <p className="booking-error">{bookingError}</p>
+            )}
+
+            <button
+              type="submit"
+              className="gold-button modal-whatsapp"
+              disabled={saving}
+            >
+              {saving ? "Processing..." : "Confirm Reservation"}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
 function App() {
   const [dates, setDates] = useState({
     pickup: "",
@@ -135,6 +274,54 @@ function App() {
   const [vehicle, setVehicle] = useState(null);
   const [findOpen, setFindOpen] = useState(false);
   const [bookingCode, setBookingCode] = useState("");
+  const [bookingPhone, setBookingPhone] = useState("");
+  const [foundBooking, setFoundBooking] = useState(null);
+  const [lookupError, setLookupError] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
+
+  const [bookingSaving, setBookingSaving] = useState(false);
+  const [bookingError, setBookingError] = useState("");
+  const [bookingResult, setBookingResult] = useState(null);
+
+  async function handleBooking(payload) {
+    try {
+      setBookingSaving(true);
+      setBookingError("");
+      setBookingResult(null);
+
+      const result = await createBooking(payload);
+      setBookingResult(result);
+
+    } catch (error) {
+      setBookingError(
+        error.message || "Could not complete your reservation."
+      );
+    } finally {
+      setBookingSaving(false);
+    }
+  }
+
+  async function handleFindBooking(e) {
+    e.preventDefault();
+
+    try {
+      setLookupLoading(true);
+      setLookupError("");
+      setFoundBooking(null);
+
+      const result = await findBooking(
+        bookingCode.trim(),
+        bookingPhone.trim()
+      );
+
+      setFoundBooking(result);
+
+    } catch (error) {
+      setLookupError(error.message || "Booking not found.");
+    } finally {
+      setLookupLoading(false);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -218,7 +405,13 @@ function App() {
         onBook={() => document.getElementById("booking")?.scrollIntoView({
           behavior: "smooth"
         })}
-        onFind={() => setFindOpen(true)}
+        onFind={() => {
+          setBookingCode("");
+          setBookingPhone("");
+          setFoundBooking(null);
+          setLookupError("");
+          setFindOpen(true);
+        }}
       />
 
       <main>
@@ -286,8 +479,16 @@ function App() {
 
       <Modal
         vehicle={vehicle}
-        onClose={() => setVehicle(null)}
+        onClose={() => {
+          setVehicle(null);
+          setBookingResult(null);
+          setBookingError("");
+        }}
         dates={dates}
+        onSubmit={handleBooking}
+        saving={bookingSaving}
+        bookingResult={bookingResult}
+        bookingError={bookingError}
       />
 
       {findOpen && (
@@ -307,23 +508,53 @@ function App() {
             </button>
 
             <h2>Find Your Booking</h2>
-            <p>Enter your booking reference to continue.</p>
+            <p>Enter your booking reference and phone number.</p>
 
-            <input
-              className="booking-code-input"
-              value={bookingCode}
-              onChange={(e) => setBookingCode(e.target.value)}
-              placeholder="Booking reference"
-            />
+            <form onSubmit={handleFindBooking}>
+              <input
+                className="booking-code-input"
+                value={bookingCode}
+                onChange={(e) => setBookingCode(e.target.value)}
+                placeholder="Booking reference"
+                required
+              />
 
-            <button
-              className="gold-button modal-whatsapp"
-              onClick={() => alert(
-                "Booking lookup will be connected to your backend."
+              <input
+                className="booking-code-input"
+                type="tel"
+                value={bookingPhone}
+                onChange={(e) => setBookingPhone(e.target.value)}
+                placeholder="Phone number used for booking"
+                required
+              />
+
+              {lookupError && (
+                <p className="booking-error">{lookupError}</p>
               )}
-            >
-              Find Booking
-            </button>
+
+              <button
+                type="submit"
+                className="gold-button modal-whatsapp"
+                disabled={lookupLoading}
+              >
+                {lookupLoading ? "Searching..." : "Find Booking"}
+              </button>
+            </form>
+
+            {foundBooking && (
+              <div className="booking-success">
+                <h3>Booking Details</h3>
+                <p>Reference: {foundBooking.reference}</p>
+                <p>Customer: {foundBooking.customer_name}</p>
+                <p>Vehicle: {foundBooking.car_name}</p>
+                <p>Pick-up: {foundBooking.pickup_date}</p>
+                <p>Return: {foundBooking.return_date}</p>
+                <p>
+                  Total: KES {Number(foundBooking.total_amount).toLocaleString()}
+                </p>
+                <p>Status: {foundBooking.status}</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -332,6 +563,11 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
 
 
 
