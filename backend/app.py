@@ -1,8 +1,7 @@
-from flask import Flask, jsonify
-from flask_cors import CORS
+﻿from flask import jsonify
+from backend import create_app
 
-app = Flask(__name__)
-CORS(app)
+app = create_app()
 
 
 @app.route("/")

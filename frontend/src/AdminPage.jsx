@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  adminListCars,
+  adminCreateCar,
+  adminUpdateCar,
+  adminDeleteCar
+} from "./api";
 import { LayoutDashboard, CarFront, CalendarDays, Users, Settings, LogOut, Plus, Search, Bell, Upload, Eye, Pencil, Trash2, Menu, X } from "lucide-react";
 import "./Admin.css";
 
@@ -11,13 +17,29 @@ export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [cars, setCars] = useState(starterCars);
-  const [editing, setEditing] = useState(null);
+  const [cars, setCars] = useState([]);
+const [loading, setLoading] = useState(true);
+const [saving, setSaving] = useState(false);  const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [form, setForm] = useState({ name: "", plate: "", category: "Economy", price: "", status: "Available", image: "" });
+useEffect(() => {
+  async function loadCars() {
+    try {
+      setLoading(true);
+      const data = await adminListCars();
+      setCars(data);
+    } catch (error) {
+      setNotice(error.message || "Could not load vehicles.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadCars();
+}, []);
 
   function login(e) {
     e.preventDefault();
