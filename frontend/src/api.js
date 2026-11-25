@@ -50,13 +50,8 @@ async function withSampleFallback(callServer, callSample) {
   }
 }
 
-export function listCars(start, end) {
-  const params = new URLSearchParams({ start, end });
-
-  return withSampleFallback(
-    () => request(`/api/cars?${params}`),
-    () => sample.listCars(start, end),
-  );
+export function listCars() {
+  return request("/api/cars");
 }
 
 export function createBooking(payload) {
@@ -90,23 +85,22 @@ function vehiclePayload(payload) {
     return { body: payload };
   }
 
-  if (payload.image instanceof File) {
-    const formData = new FormData();
+  const formData = new FormData();
 
-    Object.entries(payload).forEach(([key, value]) => {
-      if (key === 'image') {
-        formData.append('image', value);
-      } else if (value !== undefined && value !== null) {
-        formData.append(key, String(value));
+  Object.entries(payload).forEach(([key, value]) => {
+    if (key === "image") {
+      if (value instanceof File) {
+        formData.append("image", value);
       }
-    });
+      return;
+    }
 
-    return { body: formData };
-  }
+    if (value !== undefined && value !== null) {
+      formData.append(key, String(value));
+    }
+  });
 
-  return {
-    body: JSON.stringify(payload),
-  };
+  return { body: formData };
 }
 
 export function adminCreateCar(payload) {

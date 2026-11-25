@@ -8,11 +8,6 @@ import {
 import { LayoutDashboard, CarFront, CalendarDays, Users, Settings, LogOut, Plus, Search, Bell, Upload, Eye, Pencil, Trash2, Menu, X } from "lucide-react";
 import "./Admin.css";
 
-const starterCars = [
-  { id: 1, name: "Toyota Axio", plate: "KDG 921B", category: "Economy", price: 3500, status: "Available", image: "" },
-  { id: 2, name: "Toyota Prado", plate: "KCA 402R", category: "SUV", price: 9500, status: "Booked", image: "" },
-];
-
 export default function AdminPage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
@@ -52,20 +47,78 @@ useEffect(() => {
   function logout() { setAuthenticated(false); setEmail(""); setPassword(""); }
   function openAdd() { setEditing(null); setForm({ name: "", plate: "", category: "Economy", price: "", status: "Available", image: "" }); setShowForm(true); }
   function openEdit(car) { setEditing(car.id); setForm({ ...car, price: String(car.price) }); setShowForm(true); }
-  function saveCar(e) {
+  async function saveCar(e) {
     e.preventDefault();
-    const item = { ...form, price: Number(form.price), id: editing || Date.now() };
-    setCars((prev) => editing ? prev.map((c) => c.id === editing ? item : c) : [item, ...prev]);
-    setShowForm(false);
+
+    setSaving(true);
+    setNotice("");
+
+    try {
+      const payload = {
+        ...form,
+        price: Number(form.price),
+      };
+
+      if (editing) {
+        await adminUpdateCar(editing, payload);
+      } else {
+        await adminCreateCar(payload);
+      }
+
+      const updatedCars = await adminListCars();
+      setCars(updatedCars);
+      setShowForm(false);
+      setEditing(null);
+      setForm({
+        name: "",
+        plate: "",
+        category: "Economy",
+        price: "",
+        status: "Available",
+        image: "",
+      });
+
+      setNotice(
+        editing
+          ? "Vehicle updated successfully."
+          : "Vehicle added successfully."
+      );
+    } catch (error) {
+      setNotice(error.message || "Could not save vehicle.");
+    } finally {
+      setSaving(false);
+    }
   }
-  function removeCar(id) { if (confirm("Delete this vehicle from the demo fleet?")) setCars((prev) => prev.filter((c) => c.id !== id)); }
+
+  async function removeCar(id) {
+    if (!confirm("Are you sure you want to delete this vehicle?")) {
+      return;
+    }
+
+    try {
+      await adminDeleteCar(id);
+      setCars((prev) => prev.filter((car) => car.id !== id));
+      setNotice("Vehicle deleted successfully.");
+    } catch (error) {
+      setNotice(error.message || "Could not delete vehicle.");
+    }
+  }
+
   function upload(e) {
     const file = e.target.files?.[0];
+
     if (!file) return;
-    if (!file.type.startsWith("image/")) { setNotice("Choose an image file."); return; }
-    const reader = new FileReader();
-    reader.onload = () => setForm((prev) => ({ ...prev, image: String(reader.result) }));
-    reader.readAsDataURL(file);
+
+    if (!file.type.startsWith("image/")) {
+      setNotice("Choose a valid image file.");
+      e.target.value = "";
+      return;
+    }
+
+    setForm((prev) => ({
+      ...prev,
+      image: file,
+    }));
   }
 
   if (!authenticated) return (
@@ -117,7 +170,7 @@ useEffect(() => {
         <section className="aq-dashboard-content">
           <div className="aq-welcome"><div><span className="aq-kicker">OVERVIEW</span><h1>Dashboard</h1><p>Here's what's happening with your rental business.</p></div><button className="aq-primary" onClick={openAdd}><Plus size={18}/> Add vehicle</button></div>
           <div className="aq-stat-grid">
-            <article className="aq-stat"><span>Total vehicles</span><strong>{cars.length}</strong><small>In your demo fleet</small></article>
+            <article className="aq-stat"><span>Total vehicles</span><strong>{cars.length}</strong><small>Vehicles registered</small></article>
             <article className="aq-stat"><span>Available</span><strong>{cars.filter(c=>c.status==="Available").length}</strong><small>Ready to rent</small></article>
             <article className="aq-stat"><span>Currently booked</span><strong>{cars.filter(c=>c.status==="Booked").length}</strong><small>Marked as booked</small></article>
             <article className="aq-stat"><span>Fleet categories</span><strong>{new Set(cars.map(c=>c.category)).size}</strong><small>Across vehicle types</small></article>
@@ -130,7 +183,7 @@ useEffect(() => {
             </tbody></table></div>
             {visibleCars.length===0 && <div className="aq-empty">No vehicles match that search.</div>}
           </section>
-          <div className="aq-demo-warning">Demo dashboard: changes and uploaded images currently remain in this page's memory only. Secure authentication, database persistence and cloud image storage will be connected in the backend phase.</div>
+          <div className="aq-demo-warning">Vehicle records are managed through the WHEEL-Q database.</div>
         </section>
       </main>
       {showForm && <div className="aq-modal-overlay" onClick={()=>setShowForm(false)}><section className="aq-vehicle-modal" onClick={e=>e.stopPropagation()}><button className="aq-modal-x" onClick={()=>setShowForm(false)}><X/></button><span className="aq-kicker">{editing?"EDIT VEHICLE":"NEW LISTING"}</span><h2>{editing?"Update vehicle":"Add a vehicle"}</h2><p>Enter the details customers will see.</p><form onSubmit={saveCar}>
@@ -139,8 +192,8 @@ useEffect(() => {
         <div className="aq-form-row"><label>Category<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}><option>Economy</option><option>SUV</option><option>Van</option><option>Luxury</option><option>Tour vehicle</option></select></label><label>Daily price (KES)<input required min="0" type="number" value={form.price} placeholder="3500" onChange={e=>setForm({...form,price:e.target.value})}/></label></div>
         <label>Status<select value={form.status} onChange={e=>setForm({...form,status:e.target.value})}><option>Available</option><option>Booked</option><option>Unavailable</option></select></label>
         <label className="aq-upload"><Upload size={22}/><strong>{form.image?"Image selected":"Upload vehicle photo"}</strong><span>Choose an image file from your device</span><input type="file" accept="image/*" onChange={upload}/></label>
-        {form.image && <img className="aq-preview" src={form.image} alt="Vehicle preview"/>}
-        <div className="aq-form-actions"><button type="button" className="aq-secondary" onClick={()=>setShowForm(false)}>Cancel</button><button className="aq-primary">{editing?"Save changes":"Add vehicle"}</button></div>
+        {typeof form.image === "string" && form.image && <img className="aq-preview" src={form.image} alt="Vehicle preview"/>}
+        <div className="aq-form-actions"><button type="button" className="aq-secondary" onClick={()=>setShowForm(false)}>Cancel</button><button className="aq-primary" disabled={saving}>{saving ? "Saving..." : editing ? "Save changes" : "Add vehicle"}</button></div>
       </form></section></div>}
     </div>
   );
