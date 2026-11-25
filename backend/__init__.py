@@ -16,19 +16,35 @@ def create_app():
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         "sqlite:///" + database_path.replace("\\", "/")
     )
+
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
     app.config["UPLOAD_FOLDER"] = os.path.join(
         base_dir, "uploads", "cars"
     )
+
     app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 
     CORS(app)
     db.init_app(app)
 
+    # Import models before creating database tables.
     from backend.models.car import Car
-    from backend.routes.cars import cars_bp
+    from backend.models.booking import Booking
 
-    app.register_blueprint(cars_bp, url_prefix="/api/cars")
+    # Import API routes.
+    from backend.routes.cars import cars_bp
+    from backend.routes.bookings import bookings_bp
+
+    app.register_blueprint(
+        cars_bp,
+        url_prefix="/api/cars"
+    )
+
+    app.register_blueprint(
+        bookings_bp,
+        url_prefix="/api/bookings"
+    )
 
     with app.app_context():
         db.create_all()
