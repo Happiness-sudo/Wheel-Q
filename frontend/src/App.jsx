@@ -369,8 +369,6 @@ function App() {
       active = false;
     };
   }, []);
-
-  // Customers should only see vehicles the admin has marked Available.
   const availableCars = cars.filter(
     (car) => car.status === "Available"
   );

@@ -1,5 +1,4 @@
-// A tiny pretend backend that mimics the real API's responses (see API-CONTRACT.md).
-// Bookings made here live in memory only and disappear when the page reloads.
+
 import { SAMPLE_CARS, sampleBlockedRanges } from './sampleData';
 import { daysBetween, rangesOverlap } from './lib/dates';
 import { normalizePhone } from './lib/validate';

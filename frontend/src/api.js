@@ -27,7 +27,7 @@ async function request(path, options = {}) {
   try {
     body = await response.json();
   } catch {
-    // Ignore empty responses.
+
   }
 
   if (!response.ok) {

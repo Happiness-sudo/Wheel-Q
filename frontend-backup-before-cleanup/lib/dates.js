@@ -1,5 +1,3 @@
-// Dates are passed around as plain "YYYY-MM-DD" strings. Parsing them by hand keeps
-// everything in the visitor's local time, so nothing shifts by a day because of UTC.
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -22,13 +20,10 @@ export function addDays(iso, count) {
   return toISO(date);
 }
 
-// Rental days = return date minus pick-up date. 24 Nov to 27 Nov is 3 days.
 export function daysBetween(startISO, endISO) {
   return Math.round((fromISO(endISO) - fromISO(startISO)) / 86400000);
 }
 
-// A booking ends on its return date, so another booking may start that same day.
-// This is why the comparison is "<" and not "<=".
 export function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
 }

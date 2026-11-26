@@ -1,5 +1,4 @@
-// Turns 0712 345 678, 0112345678, 254712345678 or +254 712 345 678 into +254712345678.
-// Returns null when the number is not a Kenyan mobile number.
+
 export function normalizePhone(input) {
   const cleaned = String(input).replace(/[\s()-]/g, '');
   const match = cleaned.match(/^(?:\+254|254|0)([17]\d{8})$/);

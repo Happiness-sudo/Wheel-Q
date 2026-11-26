@@ -17,7 +17,6 @@ async function request(path, options = {}) {
   try {
     body = await response.json();
   } catch {
-    // Some error responses have no JSON body. The status code is enough.
   }
 
   if (!response.ok) {
@@ -26,8 +25,6 @@ async function request(path, options = {}) {
   return body;
 }
 
-// Every function below resolves to { data, sample }.
-// `sample` is true when the answer came from the built-in sample data (dev only).
 async function withSampleFallback(callServer, callSample) {
   try {
     return { data: await callServer(), sample: false };

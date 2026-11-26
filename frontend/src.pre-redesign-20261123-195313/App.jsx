@@ -17,8 +17,6 @@ export default function App() {
 
   const days = daysBetween(dates.start, dates.end);
 
-  // Only the newest request may update the screen, so a slow answer for old dates
-  // can never overwrite the cars for the dates the visitor picked afterwards.
   const latestRequest = useRef(0);
 
   const loadCars = useCallback(
@@ -39,7 +37,6 @@ export default function App() {
     loadCars();
   }, [loadCars]);
 
-  // Keep the dates sensible: not in the past, and the return at least a day after pick-up.
   function changeDates(change) {
     const next = { ...dates, ...change };
     if (next.start < today) next.start = today;

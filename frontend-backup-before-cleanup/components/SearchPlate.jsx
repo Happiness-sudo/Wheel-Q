@@ -1,13 +1,11 @@
 import { addDays, dayWord, formatDay } from '../lib/dates';
 
-// The big number the visitor sees is the formatted date. The real <input type="date">
-// sits invisibly on top of it, so tapping the date opens the browser's own date picker.
 function DateField({ id, label, value, min, onChange }) {
   function openPicker(event) {
     try {
       event.currentTarget.showPicker?.();
     } catch {
-      // Some browsers only allow this from a direct tap. The normal control still works.
+      
     }
   }
 

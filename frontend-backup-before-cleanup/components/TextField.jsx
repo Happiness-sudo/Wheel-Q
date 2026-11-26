@@ -1,4 +1,4 @@
-// A label, an optional hint, the input, and an error message, wired together for screen readers.
+
 export default function TextField({ id, label, hint, error, multiline = false, ...inputProps }) {
   const describedBy = [hint && `${id}-hint`, error && `${id}-error`].filter(Boolean).join(' ') || undefined;
   const Control = multiline ? 'textarea' : 'input';

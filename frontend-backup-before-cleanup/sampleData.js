@@ -1,7 +1,5 @@
 import { addDays, todayISO } from './lib/dates';
 
-// Sample fleet used only while the backend is not running (dev). Names, prices and
-// registrations are made up. The real fleet comes from the backend.
 export const SAMPLE_CARS = [
   { id: 1, name: 'Toyota Vitz', category: 'Hatchback', seats: 5, transmission: 'Automatic', fuel: 'Petrol', daily_rate: 3500, plate: 'KDA 214M' },
   { id: 2, name: 'Mazda Demio', category: 'Hatchback', seats: 5, transmission: 'Automatic', fuel: 'Petrol', daily_rate: 3800, plate: 'KDG 481T' },

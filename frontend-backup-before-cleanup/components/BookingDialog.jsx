@@ -14,7 +14,6 @@ export default function BookingDialog({ car, start, end,  days, onClose, onBooke
   const [serverError, setServerError] = useState('');
   const [result, setResult] = useState(null);
 
-  // <dialog> gives us focus trapping and the Escape key for free once it is opened as a modal.
   useEffect(() => {
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) dialog.showModal();
