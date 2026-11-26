@@ -3,23 +3,35 @@ import {
   adminListCars,
   adminCreateCar,
   adminUpdateCar,
-  adminDeleteCar
-} from "./api";
-import { LayoutDashboard, CarFront, CalendarDays, Users, Settings, LogOut, Plus, Search, Bell, Upload, Eye, Pencil, Trash2, Menu, X } from "lucide-react";
+  adminDeleteCar,
+  adminLogin,
+  adminCheckSession,
+  adminLogout,
+  adminGetCsrf
+} from "./api";import { LayoutDashboard, CarFront, CalendarDays, Users, Settings, LogOut, Plus, Search, Bell, Upload, Eye, Pencil, Trash2, Menu, X } from "lucide-react";
 import "./Admin.css";
 
 export default function AdminPage() {
-  const [authenticated, setAuthenticated] = useState(false);
+    const [authenticated, setAuthenticated] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [cars, setCars] = useState([]);
-const [loading, setLoading] = useState(true);
-const [saving, setSaving] = useState(false);  const [editing, setEditing] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [query, setQuery] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notice, setNotice] = useState("");
-  const [form, setForm] = useState({ name: "", plate: "", category: "Economy", price: "", status: "Available", image: "" });
+
+  const [form, setForm] = useState({
+    name: "",
+    plate: "",
+    category: "Economy",
+    price: "",
+    status: "Available",
+    image: ""
+  });
 useEffect(() => {
   async function loadCars() {
     try {
@@ -36,15 +48,38 @@ useEffect(() => {
   loadCars();
 }, []);
 
-  function login(e) {
-    e.preventDefault();
-    // UI demonstration only: backend authentication will replace this check.
-    if (email.trim() && password.trim()) {
-      setAuthenticated(true);
-      setNotice("");
-    } else setNotice("Enter your email and password.");
+  async function login(e) {
+  e.preventDefault();
+
+  try {
+    setNotice("Signing in...");
+
+    await adminLogin(email.trim(), password);
+
+    setAuthenticated(true);
+    setPassword("");
+    setNotice("");
+
+    const data = await adminListCars();
+    setCars(data);
+
+  } catch (error) {
+    setAuthenticated(false);
+    setNotice(error.message || "Login failed. Check your credentials.");
   }
-  function logout() { setAuthenticated(false); setEmail(""); setPassword(""); }
+}
+  async function logout() {
+  try {
+    await adminLogout();
+  } catch (error) {
+    console.error("Logout error:", error);
+  }
+
+  setAuthenticated(false);
+  setEmail("");
+  setPassword("");
+  setNotice("");
+}
   function openAdd() { setEditing(null); setForm({ name: "", plate: "", category: "Economy", price: "", status: "Available", image: "" }); setShowForm(true); }
   function openEdit(car) { setEditing(car.id); setForm({ ...car, price: String(car.price) }); setShowForm(true); }
   async function saveCar(e) {

@@ -1,6 +1,6 @@
 ﻿import os
 import uuid
-
+from backend.routes.admin import admin_required, csrf_required
 from flask import Blueprint, current_app, jsonify, request, send_from_directory
 from backend import db
 from backend.models.car import Car
@@ -37,6 +37,13 @@ def list_cars():
 
 @cars_bp.route("", methods=["POST"])
 def create_car():
+    auth_error = admin_required()
+    if auth_error:
+        return auth_error
+
+    csrf_error = csrf_required()
+    if csrf_error:
+        return csrf_error
     data = request.form if request.form else (request.get_json(silent=True) or {})
 
     required = ["name", "plate", "category", "price"]
@@ -88,6 +95,13 @@ def create_car():
 
 @cars_bp.route("/<int:car_id>", methods=["PUT"])
 def update_car(car_id):
+    auth_error = admin_required()
+    if auth_error:
+        return auth_error
+
+    csrf_error = csrf_required()
+    if csrf_error:
+        return csrf_error
     car = db.session.get(Car, car_id)
     if not car:
         return jsonify({"error": "Vehicle not found."}), 404
@@ -151,6 +165,12 @@ def update_car(car_id):
 
 @cars_bp.route("/<int:car_id>", methods=["DELETE"])
 def delete_car(car_id):
+    auth_error = admin_required()
+    if auth_error:
+        return auth_error
+    csrf_error = csrf_required()
+    if csrf_error:
+        return csrf_error
     car = db.session.get(Car, car_id)
     if not car:
         return jsonify({"error": "Vehicle not found."}), 404

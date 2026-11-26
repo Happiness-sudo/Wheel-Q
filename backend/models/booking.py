@@ -42,7 +42,7 @@ class Booking(db.Model):
 
     return_date = db.Column(
         db.Date,
-        nullable=False
+        nullable=False 
     )
 
     days = db.Column(db.Integer, nullable=False)

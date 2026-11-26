@@ -1,5 +1,7 @@
-﻿import { API_URL } from './config';
+import { API_URL } from './config';
 import { ApiError } from './apiError';
+
+let csrfToken = '';
 
 async function request(path, options = {}) {
   let response;
@@ -9,8 +11,10 @@ async function request(path, options = {}) {
   try {
     response = await fetch(`${API_URL}${path}`, {
       ...options,
+      credentials: 'include',
       headers: {
         ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+        ...(csrfToken ? { 'X-CSRF-Token': csrfToken } : {}),
         ...options.headers,
       },
     });
@@ -23,17 +27,49 @@ async function request(path, options = {}) {
   try {
     body = await response.json();
   } catch {
-    // Some error responses have no JSON body.
+    // Ignore empty responses.
   }
 
   if (!response.ok) {
-    throw new ApiError(body?.error || 'Something went wrong.', response.status);
+    throw new ApiError(
+      body?.error || 'Something went wrong.',
+      response.status
+    );
   }
 
   return body;
 }
 
-// Public booking functions use the real Flask backend.
+export async function adminGetCsrf() {
+  const result = await request('/api/admin/csrf');
+  csrfToken = result.csrf_token;
+  return result;
+}
+
+export async function adminLogin(email, password) {
+  if (!csrfToken) await adminGetCsrf();
+
+  const result = await request('/api/admin/login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  });
+
+  csrfToken = result.csrf_token;
+  return result;
+}
+
+export function adminCheckSession() {
+  return request('/api/admin/me');
+}
+
+export function adminLogout() {
+  return request('/api/admin/logout', {
+    method: 'POST',
+  }).finally(() => {
+    csrfToken = '';
+  });
+}
+
 export function listCars() {
   return request('/api/cars');
 }
@@ -53,7 +89,6 @@ export function findBooking(reference, phone) {
   );
 }
 
-// Admin fleet management functions.
 export function adminListCars() {
   return request('/api/cars');
 }
