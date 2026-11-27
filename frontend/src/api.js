@@ -1,4 +1,4 @@
-import { API_URL } from './config';
+﻿import { API_URL } from './config';
 import { ApiError } from './apiError';
 
 let csrfToken = '';
@@ -27,7 +27,7 @@ async function request(path, options = {}) {
   try {
     body = await response.json();
   } catch {
-
+    // Response did not contain valid JSON.
   }
 
   if (!response.ok) {
@@ -139,3 +139,15 @@ export function adminDeleteCar(id) {
     method: 'DELETE',
   });
 }
+export function adminListBookings() {
+  return request('/api/admin/bookings');
+}
+
+export function adminUpdateBooking(id, status) {
+  return request(`/api/admin/bookings/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
+

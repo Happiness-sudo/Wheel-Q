@@ -1,14 +1,12 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import {
   adminListCars,
   adminCreateCar,
   adminUpdateCar,
   adminDeleteCar,
   adminLogin,
-  adminCheckSession,
   adminLogout,
-  adminGetCsrf
-} from "./api";import { LayoutDashboard, CarFront, CalendarDays, Users, Settings, LogOut, Plus, Search, Bell, Upload, Eye, Pencil, Trash2, Menu, X } from "lucide-react";
+} from "./api";import { LayoutDashboard, CarFront, CalendarDays, Users, Settings, LogOut, Plus, Search, Bell, Upload, Pencil, Trash2, Menu, X } from "lucide-react";
 import "./Admin.css";
 
 export default function AdminPage() {
@@ -16,7 +14,7 @@ export default function AdminPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [cars, setCars] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
@@ -174,7 +172,7 @@ useEffect(() => {
           {notice && <div className="aq-notice">{notice}</div>}
           <button className="aq-primary aq-login-submit">Sign in to dashboard</button>
           <div className="aq-login-note">Access is intended for authorised WHEEL-Q administrators.</div>
-          <a className="aq-back" href="/">← Back to website</a>
+          <a className="aq-back" href="/">â† Back to website</a>
         </form>
       </section>
     </main>
@@ -233,3 +231,5 @@ useEffect(() => {
     </div>
   );
 }
+
+

@@ -131,14 +131,7 @@ function Modal({
   const [customerName, setCustomerName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    setCustomerName("");
-    setPhone("");
-    setEmail("");
-  }, [vehicle?.id]);
-
-  if (!vehicle) return null;
+if (!vehicle) return null;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -351,7 +344,7 @@ function App() {
         }));
 
         setCars(vehicles);
-      } catch (error) {
+      } catch {
         if (active) {
           setCars([]);
           setFleetError(
@@ -476,6 +469,7 @@ function App() {
       <Footer/>
 
       <Modal
+        key={vehicle?.id ?? "closed"}
         vehicle={vehicle}
         onClose={() => {
           setVehicle(null);
@@ -561,6 +555,11 @@ function App() {
 }
 
 export default App;
+
+
+
+
+
 
 
 

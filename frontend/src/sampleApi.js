@@ -1,4 +1,4 @@
-import { SAMPLE_CARS, sampleBlockedRanges } from './sampleData';
+﻿import { SAMPLE_CARS, sampleBlockedRanges } from './sampleData';
 import { daysBetween, rangesOverlap } from './lib/dates';
 import { normalizePhone } from './lib/validate';
 import { ApiError } from './apiError';
@@ -22,8 +22,10 @@ function makeReference() {
   return `WQ-${code}`;
 }
 
-function publicView({ phone, ...booking }) {
-  return booking;
+function publicView(booking) {
+  const publicBooking = { ...booking };
+  delete publicBooking.phone;
+  return publicBooking;
 }
 
 export async function listCars(start, end) {
@@ -67,3 +69,4 @@ export async function findBooking(reference, phone) {
   }
   return publicView(match);
 }
+

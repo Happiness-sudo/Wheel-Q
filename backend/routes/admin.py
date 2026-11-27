@@ -91,3 +91,71 @@ def logout():
     session.clear()
 
     return jsonify({"message": "Logged out successfully."})
+from backend import db
+from backend.models.booking import Booking
+
+
+def admin_booking_data(booking):
+    return {
+        "id": booking.id,
+        "reference": booking.reference,
+        "car_id": booking.car_id,
+        "car_name": booking.car.name,
+        "customer_name": booking.customer_name,
+        "phone": booking.phone,
+        "email": booking.email,
+        "pickup_date": booking.pickup_date.isoformat(),
+        "return_date": booking.return_date.isoformat(),
+        "days": booking.days,
+        "daily_rate": booking.daily_rate,
+        "total_amount": booking.total_amount,
+        "status": booking.status,
+        "created_at": booking.created_at.isoformat(),
+    }
+
+
+@admin_bp.route("/bookings", methods=["GET"])
+def admin_list_bookings():
+    auth_error = admin_required()
+    if auth_error:
+        return auth_error
+
+    bookings = Booking.query.order_by(
+        Booking.created_at.desc()
+    ).all()
+
+    return jsonify([admin_booking_data(item) for item in bookings])
+
+
+@admin_bp.route("/bookings/<int:booking_id>", methods=["PATCH"])
+def admin_update_booking(booking_id):
+    auth_error = admin_required()
+    if auth_error:
+        return auth_error
+
+    csrf_error = csrf_required()
+    if csrf_error:
+        return csrf_error
+
+    data = request.get_json(silent=True) or {}
+    status = str(data.get("status", "")).strip()
+
+    allowed_statuses = {
+        "Pending",
+        "Confirmed",
+        "Cancelled",
+        "Completed",
+    }
+
+    if status not in allowed_statuses:
+        return jsonify({"error": "Invalid booking status."}), 400
+
+    booking = db.session.get(Booking, booking_id)
+
+    if not booking:
+        return jsonify({"error": "Booking not found."}), 404
+
+    booking.status = status
+    db.session.commit()
+
+    return jsonify(admin_booking_data(booking))
